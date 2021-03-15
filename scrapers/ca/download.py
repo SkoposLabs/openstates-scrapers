@@ -14,21 +14,15 @@ import subprocess
 import logging
 import lxml.html
 import argparse
+import sys
 from datetime import datetime
 from os.path import join, split
 from functools import partial
 from collections import namedtuple
-
+import csv
 import requests
 import MySQLdb
-
-
-MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
-MYSQL_USER = os.environ.get("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
-
-BASE_URL = "https://downloads.leginfo.legislature.ca.gov/"
-
+from .skopos_mysql import get_mysql_passwords_from_file, get_aws_mysql_secret
 
 # ----------------------------------------------------------------------------
 # Logging config
@@ -45,12 +39,106 @@ logger = logging.getLogger("openstates.ca-update")
 # Miscellaneous db admin commands.
 
 
+
+# ---------------------------------------------------------------------------
+# Connect to DB
+
+
+#add this key to the docker-compose.yml if it is not there.
+USE_AWS_KEY = os.environ.get("USE_AWS_KEY", "False")
+
+if USE_AWS_KEY == "True":
+    get_aws_mysql_secret()
+    #do secret thing here:
+else:
+    password_list = get_mysql_passwords_from_file()
+    skopos_user = password_list[1][0]
+    skopos_password = password_list[1][1]
+    #either get the environment variable, or use the default...
+    #use the default if this is the first time you're ever running docker.
+    MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
+    MYSQL_USER = os.environ.get("MYSQL_USER", skopos_user)
+    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", skopos_password)
+
+
+BASE_URL = "https://downloads.leginfo.legislature.ca.gov/"
+
+
 def clean_text(s):
     # replace smart quote characters
     s = re.sub(r"[\u2018\u2019]", "'", s)
     s = re.sub(r"[\u201C\u201D]", '"', s)
     s = s.replace("\xe2\u20ac\u02dc", "'")
     return s
+    
+
+
+#2021-03-14 skopos function to initialize the skopos passwords. 
+#you only need to run this once, with the flag --init_db_psword
+def intialize_db_passwords():
+
+    if USE_AWS_KEY == "True":
+        print("Running on AWS")
+        #insert get secret code here...
+    else:
+        print("Running locally")
+        password_list = get_mysql_passwords_from_file()
+        root_password = password_list[0][1]
+        skopos_user = password_list[1][0]
+        skopos_password = password_list[1][1]
+
+        print("trying to connect to capublic with root no password...")
+        try:
+            connection = MySQLdb.connect(
+                host=MYSQL_HOST, user="root", passwd="", db="information_schema"
+            )
+            
+            connection.autocommit(True)
+            cursor = connection.cursor()
+
+            cursor.execute('SHOW DATABASES where `database` like "%information_schema%";')
+            m = cursor.fetchone()
+            print("The first database is ",m[0])
+            
+            if m[0].strip() == "information_schema":
+                print("Connected as root no password")
+            
+            set_root_psword = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + root_password + "');"
+            
+            cursor.execute(set_root_psword)
+            cursor.execute("flush privileges;")
+            
+            #this is original. keep this if you need to go back...
+            #GRANT ALL PRIVILEGES ON *.* TO `root`@`%` WITH GRANT OPTION;
+            
+            cursor.execute('show grants;')
+            for row in cursor:
+                print(row)
+                
+            #force a password on root.
+            update_root_grant = "GRANT ALL PRIVILEGES ON *.* TO `root`@`%` IDENTIFIED BY '" + root_password + "';"
+            
+            cursor.execute(update_root_grant)
+            cursor.execute("flush privileges;")
+            
+            create_skopos_user = "CREATE USER '" + skopos_user + "'@'localhost' IDENTIFIED BY '" + skopos_password + "';"
+            print(create_skopos_user)
+            
+            cursor.execute(create_skopos_user)
+            cursor.execute("flush privileges;")
+
+            update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO `" + skopos_user + "`@`%`;"
+            
+            cursor.execute(update_skopos_grant)
+            cursor.execute("flush privileges;")
+            
+            connection.close()
+
+        except BaseException as e: 
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            error_message = str(exc_type) + " " + str(exc_value) + " on line "+ str(exc_traceback.tb_lineno)
+            print(error_message)
+            contents = "ERROR " + error_message
 
 
 def db_drop():
@@ -309,11 +397,22 @@ def get_data(contents, year):
         load(dirname)
 
 
+#note to skopos developer: don't use this script to upload archived CA sessions.
+#use the code in stateleg to handle archived sessions.
 if __name__ == "__main__":
     my_parser = argparse.ArgumentParser()
     my_parser.add_argument("--year", action="store", type=int)
+    my_parser.add_argument("--init_db_psword", action="store", type=bool, default=False)
     args = my_parser.parse_args()
     year = args.year
+    init_db_psword = args.init_db_psword
+
+    print("The year is " + str(year))
+    print("The init_db_psword is " + str(init_db_psword))
+    
+    #skopos code to create passwords...
+    if init_db_psword:
+        intialize_db_passwords()
 
     db_drop()
     db_create()

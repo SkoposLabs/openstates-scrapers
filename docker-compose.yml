@@ -39,6 +39,7 @@ services:
     - MYSQL_HOST=mysql
     - DATABASE_URL=postgres://openstates:openstates@db/openstatesorg
     - PYTHONPATH=./scrapers
+    - USE_AWS_KEY=False
     volumes:
     - .:/opt/openstates/openstates/
     entrypoint: ["poetry", "run", "os-update"]
@@ -51,6 +52,7 @@ services:
     entrypoint: /opt/openstates/openstates/scrapers/ca/download.sh
     environment:
     - MYSQL_HOST=mysql
+    - USE_AWS_KEY=False
     volumes:
     - .:/opt/openstates/openstates/
     depends_on:

@@ -8,10 +8,23 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
 from .models import CACommitteeHearing, CALocation
+from .skopos_mysql import get_mysql_passwords_from_file, get_aws_mysql_secret
 
-MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
-MYSQL_USER = os.environ.get("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
+
+USE_AWS_KEY = os.environ.get("USE_AWS_KEY", "False")
+
+if USE_AWS_KEY == "True":
+    get_aws_mysql_secret()
+    #do secret thing here:
+else:
+    password_list = get_mysql_passwords_from_file()
+    skopos_user = password_list[1][0]
+    skopos_password = password_list[1][1]
+    #either get the environment variable, or use the default...
+    #use the default if this is the first time you're ever running docker.
+    MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
+    MYSQL_USER = os.environ.get("MYSQL_USER", skopos_user)
+    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", skopos_password)
 
 
 class CAEventScraper(Scraper):
