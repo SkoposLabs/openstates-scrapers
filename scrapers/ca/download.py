@@ -124,10 +124,10 @@ def intialize_db_passwords():
 
             create_skopos_user = "CREATE USER '" + skopos_user + "'@'%' IDENTIFIED BY '" + skopos_password + "';"
             print(create_skopos_user)
-            '''
 
             cursor.execute(create_skopos_user)
             cursor.execute("flush privileges;")
+            '''
 
             update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO '" + skopos_user + "'@`localhost`;"
             print(update_skopos_grant)
