@@ -121,15 +121,15 @@ def intialize_db_passwords():
             
             cursor.execute(update_root_grant)
             cursor.execute("flush privileges;")
+            '''
 
-            create_skopos_user = "CREATE USER '" + skopos_user + "'@'%' IDENTIFIED BY '" + skopos_password + "';"
+            create_skopos_user = "CREATE USER '" + skopos_user + "'@`mysql` IDENTIFIED BY '" + skopos_password + "';"
             print(create_skopos_user)
 
             cursor.execute(create_skopos_user)
             cursor.execute("flush privileges;")
-            '''
 
-            update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO '" + skopos_user + "'@`localhost`;"
+            update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO '" + skopos_user + "'@`mysql`;"
             print(update_skopos_grant)
             
             cursor.execute(update_skopos_grant)
