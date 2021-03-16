@@ -18,8 +18,8 @@ if USE_AWS_KEY == "True":
     #do secret thing here:
 else:
     password_list = get_mysql_passwords_from_file()
-    skopos_user = password_list[1][0]
-    skopos_password = password_list[1][1]
+    skopos_user = password_list[0][0]
+    skopos_password = password_list[0][1]
     #either get the environment variable, or use the default...
     #use the default if this is the first time you're ever running docker.
     MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")

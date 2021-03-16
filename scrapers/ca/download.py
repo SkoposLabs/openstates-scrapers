@@ -52,8 +52,8 @@ if USE_AWS_KEY == "True":
     #do secret thing here:
 else:
     password_list = get_mysql_passwords_from_file()
-    skopos_user = password_list[1][0]
-    skopos_password = password_list[1][1]
+    skopos_user = password_list[0][0]
+    skopos_password = password_list[0][1]
     #either get the environment variable, or use the default...
     #use the default if this is the first time you're ever running docker.
     MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
@@ -103,7 +103,6 @@ def intialize_db_passwords():
             if m[0].strip() == "information_schema":
                 print("Connected as root no password")
             
-            '''
             set_root_psword = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + root_password + "');"
             
             cursor.execute(set_root_psword)
@@ -123,18 +122,19 @@ def intialize_db_passwords():
             cursor.execute("flush privileges;")
             '''
 
-            create_skopos_user = "CREATE USER '" + skopos_user + "'@`mysql` IDENTIFIED BY '" + skopos_password + "';"
+            create_skopos_user = "CREATE USER '" + skopos_user + "'@'%' IDENTIFIED BY '" + skopos_password + "';"
             print(create_skopos_user)
 
             cursor.execute(create_skopos_user)
             cursor.execute("flush privileges;")
 
-            update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO '" + skopos_user + "'@`mysql`;"
+            update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO '" + skopos_user + "'@`%`;"
             print(update_skopos_grant)
             
             cursor.execute(update_skopos_grant)
             cursor.execute("flush privileges;")
-            
+            '''
+
             connection.close()
 
         except BaseException as e: 
