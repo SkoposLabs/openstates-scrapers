@@ -19,6 +19,7 @@ SPONSOR_TYPES = {
     "PRINCIPAL_COAUTHOR": "principal coauthor",
 }
 
+#add this key to the docker-compose.yml if it is not there.
 USE_AWS_KEY = os.environ.get("USE_AWS_KEY", "False")
 
 if USE_AWS_KEY == "True":
@@ -92,6 +93,8 @@ committee_data_upper = [
     ("Standing Committee on Budget and Fiscal Review", "CS62", ["B. & F.R."]),
     ("Standing Committee on Human Services", "CS74", ["HUM. S.", "HUMAN S."]),
     ("Standing Committee on Rules", "CS58", ["RLS."]),
+    ("Referred to Com. on  RULES.", "CS58", ["RLS."]),
+    ("Re-referred to Com. on  RULES.", "CS58", ["RLS."]),
     (
         "Extraordinary Committee on Transportation and Infrastructure Development",
         "CS67",
@@ -258,6 +261,7 @@ class CABillScraper(Scraper, LXMLMixin):
             return committee_abbr_to_name[other_chamber][slugify(abbr)]
 
     def scrape(self, chamber=None, session=None):
+        #session="20212022"
         if session is None:
             session = self.jurisdiction.legislative_sessions[-1]["identifier"]
             self.info("no session specified, using %s", session)
@@ -297,7 +301,15 @@ class CABillScraper(Scraper, LXMLMixin):
             .filter_by(session_year=session)
             .filter_by(measure_type=type_abbr)
         )
+        
+            #note you can put a bill here if you want to focus on one bill
+            #sherrod 2021-02-21
+            #.filter_by(bill_id="200920100AB103")
+            #.filter_by(bill_id="201320140AB93")
+            #.filter_by(bill_id="200920103SB20")
+            #.filter_by(bill_id="200120020AB2425")
 
+            
         archive_year = int(session[0:4])
         not_archive_year = archive_year >= 2009
 
@@ -307,8 +319,8 @@ class CABillScraper(Scraper, LXMLMixin):
                 bill_session += " Special Session %s" % bill.session_num
 
             bill_id = bill.short_bill_id
-            if bill_id.strip() == "SB77" and session == "20052006":
-                continue
+            #if bill_id.strip() == "SB77" and session == "20052006":
+            #    continue
 
             fsbill = Bill(bill_id, bill_session, title="", chamber=chamber)
             if (bill_id.startswith("S") and chamber == "lower") or (
@@ -323,6 +335,7 @@ class CABillScraper(Scraper, LXMLMixin):
                 "billNavClient.xhtml?bill_id=%s"
             ) % bill.bill_id
 
+            print(source_url) #sherrod
             fsbill.add_source(source_url)
             fsbill.add_version_link(bill_id, source_url, media_type="text/html")
 
@@ -333,9 +346,17 @@ class CABillScraper(Scraper, LXMLMixin):
             summary = ""
 
             # Get digest test (aka "summary") from latest version.
-            if bill.versions and not_archive_year:
+            if bill.versions:
                 version = bill.versions[-1]
                 nsmap = version.xml.nsmap
+                #older years have weird "none" in namespaces
+                #none conflicts with xhtml so pop it off the list
+                try:
+                    nsmap.pop(None)
+                    #sometimes this is missing. needs to be added.
+                    nsmap["xhtml"] = 'http://www.w3.org/1999/xhtml'
+                except:
+                    pass
                 xpath = "//caml:DigestText/xhtml:p"
                 els = version.xml.xpath(xpath, namespaces=nsmap)
                 chunks = []
@@ -354,16 +375,18 @@ class CABillScraper(Scraper, LXMLMixin):
 
                 # create a version name to match the state's format
                 # 02/06/17 - Enrolled
+                # 2021-03-04 added bill version id because some dates and title not unique
                 version_date_human = version_date.strftime("%m/%d/%y")
-                version_name = "{} - {}".format(
-                    version_date_human, version.bill_version_action
+                version_name = "{} - {} - {}".format(
+                    version_date_human, version.bill_version_action, version.bill_version_id
                 )
-
+                #print(version_name)
                 version_base = "https://leginfo.legislature.ca.gov/faces"
 
                 version_url_pdf = "{}/billPdf.xhtml?bill_id={}&version={}".format(
                     version_base, version.bill_id, version.bill_version_id
                 )
+                #print(version_url_pdf)
 
                 fsbill.add_version_link(
                     version_name,
@@ -372,6 +395,7 @@ class CABillScraper(Scraper, LXMLMixin):
                     date=version_date.date(),
                 )
 
+                print("Added version")
                 # CA is inconsistent in that some bills have a short title
                 # that is longer, more descriptive than title.
                 if bill.measure_type in ("AB", "SB"):
@@ -540,6 +564,14 @@ class CABillScraper(Scraper, LXMLMixin):
                     classification=kwargs["classification"],
                 )
                 for committee in kwargs.get("committees", []):
+                    #added by Sherrod 2021-01-28 for empty space strings
+                    if committee.strip() == "":
+                        committee = "Unknown"
+                    #print("the committee = " + committee)
+                    #print("committee type = " + str(type(committee)))
+                    #print("the actor = " + str(actor))
+                    #print("the act_str =" + str(act_str))
+                    #print("the date = " + str(date))
                     action.add_related_entity(committee, entity_type="organization")
                 seen_actions.add((actor, act_str, date))
 
@@ -696,7 +728,8 @@ class CABillScraper(Scraper, LXMLMixin):
 
                     if "Third Reading" in motion or "3rd Reading" in motion:
                         vtype = "passage"
-                    elif "Do Pass" in motion:
+                    #added "Do pass" 2021-02-21 because older records have that...
+                    elif "Do Pass" or "Do pass" in motion:
                         vtype = "passage"
                     else:
                         vtype = "other"

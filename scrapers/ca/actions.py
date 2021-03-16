@@ -1,6 +1,5 @@
 from utils.actions import Rule, BaseCategorizer
 
-
 # These are regex patterns that map to action categories.
 _categorizer_rules = (
     Rule(
@@ -23,6 +22,10 @@ _categorizer_rules = (
     ),
     Rule(r"Approved by the Governor", "executive-signature"),
     Rule(r"Approved by the Governor with item veto", "executive-veto-line-item"),
+    #2021-03-06 added by sherrod
+    Rule(r"Approved by Governor", "executive-signature"),
+    Rule(r"Approved by Governor(.*?)Item veto", "executive-veto-line-item"),
+    Rule(r"Approved by Governor(.*?)item veto", "executive-veto-line-item"),
     Rule("Vetoed by Governor", "executive-veto"),
     Rule("Vetoed by the Governor", "executive-veto"),
     Rule(r"To Governor", "executive-receipt"),
@@ -41,6 +44,12 @@ _categorizer_rules = (
     Rule(r"From committee with author\'s amendments", "committee-passage"),
     # Resolutions
     Rule(r"Adopted", "passage"),
+    #added by Sherrod 2021-02-24. for resolutions.
+    Rule(r"Amended, adopted", "passage"),
+    Rule(r"Passed.", "passage"),
+    Rule(r"Read, amended(.*?)and adopted.", "passage"),
+    Rule(r"Read and adopted(.*?)", "passage"),
+    #end added by sherrod
     Rule(r"Read", "reading-1"),
     Rule(r"^From committee: Be adopted", "committee-passage-favorable"),
     # New actions added per issue 2755

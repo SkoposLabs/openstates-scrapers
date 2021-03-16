@@ -89,7 +89,19 @@ class OpenLegislationAPIClient(object):
 
     def __init__(self, scraper):
         self.scraper = scraper
-        self.api_key = os.environ["NEW_YORK_API_KEY"]
+        
+        NEW_YORK_USE_AWS_KEY = os.environ.get("NEW_YORK_USE_AWS_KEY", "False")
+
+        if NEW_YORK_USE_AWS_KEY == "True":
+            pass
+            #do secret thing here:
+        else:
+            root_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '../..')) + "/"
+            ny_api_key_file = root_dir + "passwords/ny_api_key.txt"
+            with open(ny_api_key_file, encoding="utf-8") as f:
+                api_key = f.read()
+            skopos_ny_api_key = api_key.strip()
+        self.api_key = os.environ.get("NEW_YORK_API_KEY", skopos_ny_api_key)
 
     @check_response
     def get(
