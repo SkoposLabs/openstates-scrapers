@@ -90,7 +90,7 @@ def intialize_db_passwords():
         print("trying to connect to capublic with root no password...")
         try:
             connection = MySQLdb.connect(
-                host=MYSQL_HOST, user="root", passwd="", db="information_schema"
+                host=MYSQL_HOST, user="root", passwd=root_password, db="information_schema"
             )
             
             connection.autocommit(True)
@@ -103,6 +103,7 @@ def intialize_db_passwords():
             if m[0].strip() == "information_schema":
                 print("Connected as root no password")
             
+            '''
             set_root_psword = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('" + root_password + "');"
             
             cursor.execute(set_root_psword)
@@ -126,8 +127,9 @@ def intialize_db_passwords():
             
             cursor.execute(create_skopos_user)
             cursor.execute("flush privileges;")
-
+            '''
             update_skopos_grant = "GRANT ALL PRIVILEGES ON *.* TO `" + skopos_user + "`@`%`;"
+            print(update_skopos_grant)
             
             cursor.execute(update_skopos_grant)
             cursor.execute("flush privileges;")
@@ -413,8 +415,8 @@ if __name__ == "__main__":
     #skopos code to create passwords...
     if init_db_psword:
         intialize_db_passwords()
-
-    db_drop()
-    db_create()
-    contents = get_contents()
-    get_data(contents, year)
+    else:
+        db_drop()
+        db_create()
+        contents = get_contents()
+        get_data(contents, year)
