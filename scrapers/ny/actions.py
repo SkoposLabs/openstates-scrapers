@@ -189,6 +189,8 @@ _categorizer_rules = (
     # Governor
     Rule(r"(?i)signed chap.(?P<session_laws>\d+)", "executive-signature"),
     Rule(r"(?i)vetoed memo.(?P<veto_memo>.+)", "executive-veto"),
+    #added by sherrod 2021-03-29
+    Rule(r"(?i)POCKET VETO.(?P<veto_memo>.+)", "executive-veto"),
     Rule(r"(?i)DELIVERED TO GOVERNOR", "executive-receipt"),
     # Random.
     Rule(r"(?i)substituted by (?P<bill_id>\w\d+)"),
