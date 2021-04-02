@@ -156,8 +156,10 @@ class NYBillScraper(Scraper):
         return vote
 
     def _generate_bills(self, session, window=None):
+        print("window =" + str(window))
         self.logger.info("Generating bills.")
         bills = defaultdict(list)
+        print("bills = " + str(bills))
 
         delimiter = "-"
         (start_year, delimiter, end_year) = session.partition(delimiter)
@@ -166,7 +168,7 @@ class NYBillScraper(Scraper):
         # Legislature API calls that use the parameter.
         limit = 1000
         # Flag whether to retrieve full bill data.
-        full = True
+        full = "true"
         while True:
             # Updating the offset before the page matters here.
             offset = limit * page + 1
@@ -207,6 +209,10 @@ class NYBillScraper(Scraper):
                     offset=offset,
                     full=full,
                 )
+
+            print(str(response["total"]) + " total bills in " + str(session))
+            print("Starting this offset with " + str(response["offsetStart"]))
+            print("Ending this offset with " + str(response["offsetEnd"]))
 
             if (
                 response["responseType"] == "empty list"
