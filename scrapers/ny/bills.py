@@ -492,27 +492,27 @@ class NYBillScraper(Scraper):
         bills = self._generate_bills(session, window)
         
         #use for debug when api problems
-        filepath = self.getRootDir() + "/../_data/ny/all_bills_api.json"
-        f = open(filepath, "w+")
-        f.write("")
-        f.close()
+        #filepath = self.getRootDir() + "/../_data/ny/all_bills_api.json"
+        #f = open(filepath, "w+")
+        #f.write("")
+        #f.close()
 
                     
         for bill in bills:
             #use for debug when api problems.
-            f = open(filepath, "a+")
-            f.write(str(json.dumps(bill)))
+            #f = open(filepath, "a+")
+            #f.write(str(json.dumps(bill)))
             if bill_no:
                 if bill['basePrintNo'] == bill_no.upper():
                     #use for debug to see what this api call is actually returning.
-                    filepath2 = self.getRootDir() + "/../_data/ny/" + bill_no + "_api.json"
-                    f2 = open(filepath2, "w")
-                    f2.write(str(json.dumps(bill)))
-                    f2.close()
+                    #filepath2 = self.getRootDir() + "/../_data/ny/" + bill_no + "_api.json"
+                    #f2 = open(filepath2, "w")
+                    #f2.write(str(json.dumps(bill)))
+                    #f2.close()
                     self.info("Scraping bill number %s", bill_no)
                     yield from self._scrape_bill(session, bill)
                     return
             else:
                 yield from self._scrape_bill(session, bill)
         #debug
-        f.close()
+        #f.close()
