@@ -1,7 +1,9 @@
 import re
+import os
 import datetime
 import lxml.html
 import pytz
+import json
 from collections import defaultdict
 
 from openstates.scrape import Scraper, Bill, VoteEvent
@@ -159,7 +161,6 @@ class NYBillScraper(Scraper):
         print("window =" + str(window))
         self.logger.info("Generating bills.")
         bills = defaultdict(list)
-        print("bills = " + str(bills))
 
         delimiter = "-"
         (start_year, delimiter, end_year) = session.partition(delimiter)
@@ -171,8 +172,14 @@ class NYBillScraper(Scraper):
         full = "true"
         while True:
             # Updating the offset before the page matters here.
-            offset = limit * page + 1
+            # if statement added by sherrod. don't know why it mattered, but it did.
+            if page == 0:
+                offset = limit * page
+            else:
+                offset = limit * page + 1
             page += 1
+            #offset = limit * page + 1
+            #page += 1
 
             # Response should be a dict of the JSON data returned from
             # the Open Legislation API.
@@ -467,6 +474,10 @@ class NYBillScraper(Scraper):
                 time_params[name] = int(param)
         return datetime.timedelta(**time_params)
 
+    def getRootDir(self):
+        root_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')) + "/"
+        return root_dir
+
     # This scrape supports both windowed scraping for
     # bills updated since a datetime, and individual bill scraping
     # NEW_YORK_API_KEY=key os-update ny bills --scrape bill_no=S155
@@ -480,11 +491,31 @@ class NYBillScraper(Scraper):
             self.info("no session specified, using %s", session)
 
         self.term_start_year = session.split("-")[0]
+        
+        bills = self._generate_bills(session, window)
+        
+        #use for debug when api problems
+        #filepath = self.getRootDir() + "/../_data/ny/all_bills_api.json"
+        #f = open(filepath, "w+")
+        #f.write("")
+        #f.close()
 
-        for bill in self._generate_bills(session, window):
+                    
+        for bill in bills:
+            #use for debug when api problems.
+            #f = open(filepath, "a+")
+            #f.write(str(json.dumps(bill)))
             if bill_no:
                 if bill['basePrintNo'] == bill_no.upper():
+                    #use for debug to see what this api call is actually returning.
+                    #filepath2 = self.getRootDir() + "/../_data/ny/" + bill_no + "_api.json"
+                    #f2 = open(filepath2, "w")
+                    #f2.write(str(json.dumps(bill)))
+                    #f2.close()
+                    self.info("Scraping bill number %s", bill_no)
                     yield from self._scrape_bill(session, bill)
                     return
             else:
                 yield from self._scrape_bill(session, bill)
+        #debug
+        #f.close()
