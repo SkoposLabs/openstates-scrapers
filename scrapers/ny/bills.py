@@ -167,10 +167,10 @@ class NYBillScraper(Scraper):
         page = 0
         # 1000 is the current maximum returned record limit for all Open
         # Legislature API calls that use the parameter.
-        # sherrod changed to 100 2021-04-13. memory issue in response. wrong response when set to 1000.
+        # sherrod changed to 100 2021-04-13. suspect memory issue. wrong response when set to 1000.
         limit = 100
         # Flag whether to retrieve full bill data.
-        full = "true"
+        full = True
         while True:
             # Updating the offset before the page matters here.
             offset = limit * page + 1
@@ -206,6 +206,7 @@ class NYBillScraper(Scraper):
                     )
                 )
             else:
+                print("No window, so getting all bills")
                 response = self.api_client.get(
                     "bills",
                     session_year=start_year,
@@ -505,10 +506,10 @@ class NYBillScraper(Scraper):
             if bill_no:
                 if bill['basePrintNo'] == bill_no.upper():
                     #use for debug to see what this api call is actually returning.
-                    #filepath2 = self.getRootDir() + "/../_data/ny/" + bill_no + "_api.json"
-                    #f2 = open(filepath2, "w")
-                    #f2.write(str(json.dumps(bill)))
-                    #f2.close()
+                    filepath2 = self.getRootDir() + "/../_data/ny/" + bill_no + "_api.json"
+                    f2 = open(filepath2, "w")
+                    f2.write(str(json.dumps(bill)))
+                    f2.close()
                     self.info("Scraping bill number %s", bill_no)
                     yield from self._scrape_bill(session, bill)
                     return
