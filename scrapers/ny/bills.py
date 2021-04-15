@@ -1,9 +1,7 @@
 import re
-import os
 import datetime
 import lxml.html
 import pytz
-import json
 from collections import defaultdict
 
 from openstates.scrape import Scraper, Bill, VoteEvent
@@ -158,7 +156,6 @@ class NYBillScraper(Scraper):
         return vote
 
     def _generate_bills(self, session, window=None):
-        print("window =" + str(window))
         self.logger.info("Generating bills.")
         bills = defaultdict(list)
 
@@ -167,16 +164,13 @@ class NYBillScraper(Scraper):
         page = 0
         # 1000 is the current maximum returned record limit for all Open
         # Legislature API calls that use the parameter.
-        # sherrod changed to 100 2021-04-13. suspect memory issue. wrong response when set to 1000.
-        limit = 100
+        limit = 1000
         # Flag whether to retrieve full bill data.
         full = True
         while True:
             # Updating the offset before the page matters here.
             offset = limit * page + 1
             page += 1
-            #offset = limit * page + 1
-            #page += 1
 
             # Response should be a dict of the JSON data returned from
             # the Open Legislation API.
@@ -206,7 +200,6 @@ class NYBillScraper(Scraper):
                     )
                 )
             else:
-                print("No window, so getting all bills")
                 response = self.api_client.get(
                     "bills",
                     session_year=start_year,
@@ -218,6 +211,7 @@ class NYBillScraper(Scraper):
             print(str(response["total"]) + " total bills in " + str(session))
             print("Starting this offset with " + str(response["offsetStart"]))
             print("Ending this offset with " + str(response["offsetEnd"]))
+
 
             if (
                 response["responseType"] == "empty list"
@@ -472,10 +466,6 @@ class NYBillScraper(Scraper):
                 time_params[name] = int(param)
         return datetime.timedelta(**time_params)
 
-    def getRootDir(self):
-        root_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')) + "/"
-        return root_dir
-
     # This scrape supports both windowed scraping for
     # bills updated since a datetime, and individual bill scraping
     # NEW_YORK_API_KEY=key os-update ny bills --scrape bill_no=S155
@@ -486,34 +476,14 @@ class NYBillScraper(Scraper):
 
         if session is None:
             session = self.latest_session()
+            session = "2019-2020"
             self.info("no session specified, using %s", session)
 
         self.term_start_year = session.split("-")[0]
-        
-        bills = self._generate_bills(session, window)
-        
-        #use for debug when api problems
-        #filepath = self.getRootDir() + "/../_data/ny/all_bills_api.json"
-        #f = open(filepath, "w+")
-        #f.write("")
-        #f.close()
 
-                    
-        for bill in bills:
-            #use for debug when api problems.
-            #f = open(filepath, "a+")
-            #f.write(str(json.dumps(bill)))
+        for bill in self._generate_bills(session, window):
             if bill_no:
-                if bill['basePrintNo'] == bill_no.upper():
-                    #use for debug to see what this api call is actually returning.
-                    filepath2 = self.getRootDir() + "/../_data/ny/" + bill_no + "_api.json"
-                    f2 = open(filepath2, "w")
-                    f2.write(str(json.dumps(bill)))
-                    f2.close()
-                    self.info("Scraping bill number %s", bill_no)
-                    yield from self._scrape_bill(session, bill)
-                    return
+                yield from self._scrape_bill(session, bill)
+                return
             else:
                 yield from self._scrape_bill(session, bill)
-        #debug
-        #f.close()
