@@ -212,7 +212,6 @@ class NYBillScraper(Scraper):
             print("Starting this offset with " + str(response["offsetStart"]))
             print("Ending this offset with " + str(response["offsetEnd"]))
 
-
             if (
                 response["responseType"] == "empty list"
                 or response["offsetStart"] > response["offsetEnd"]
@@ -476,7 +475,6 @@ class NYBillScraper(Scraper):
 
         if session is None:
             session = self.latest_session()
-            session = "2019-2020"
             self.info("no session specified, using %s", session)
 
         self.term_start_year = session.split("-")[0]
