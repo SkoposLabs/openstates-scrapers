@@ -56,7 +56,7 @@ else:
     skopos_password = password_list[0][1]
     #either get the environment variable, or use the default...
     #use the default if this is the first time you're ever running docker.
-    MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
+    MYSQL_HOST = os.environ.get("MYSQL_HOST", "127.0.0.1")
     MYSQL_USER = os.environ.get("MYSQL_USER", skopos_user)
     MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", skopos_password)
 
