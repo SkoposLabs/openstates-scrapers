@@ -90,7 +90,7 @@ def intialize_db_passwords():
         print("trying to connect to capublic with root no password...")
         try:
             connection = MySQLdb.connect(
-                host=MYSQL_HOST, user="root", passwd=root_password, db="information_schema"
+                host=MYSQL_HOST, user="root", passwd="", db="information_schema"
             )
             
             connection.autocommit(True)
